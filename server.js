@@ -72,11 +72,11 @@ app.post("/api/consultations", async (req, res) => {
       replyTo: email // Allows you to reply directly to the parent/guardian
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log("Email notification sent successfully");
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email notification sent successfully:", info.messageId);
   } catch (error) {
-    console.error("Error sending email:", error);
-    // Don't fail the request if email fails - log it and continue
+    console.error("Error sending email:", error.message);
+    console.error("Full error:", JSON.stringify(error, null, 2));
   }
 
   return res.status(201).json({
@@ -139,10 +139,11 @@ app.post("/api/sat-registration", async (req, res) => {
       replyTo: email
     };
 
-    await transporter.sendMail(mailOptions);
-    console.log("SAT registration email sent successfully");
+    const info = await transporter.sendMail(mailOptions);
+    console.log("SAT registration email sent successfully:", info.messageId);
   } catch (error) {
-    console.error("Error sending SAT registration email:", error);
+    console.error("Error sending SAT registration email:", error.message);
+    console.error("Full error:", JSON.stringify(error, null, 2));
   }
 
   return res.status(201).json({
