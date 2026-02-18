@@ -7,34 +7,27 @@ const PORT = process.env.PORT || 4000;
 
 async function sendEmail({ from, to, subject, html, replyTo }) {
   try {
-    const toList = Array.isArray(to) ? to : [to];
-    const personalizations = [{ to: toList.map((addr) => ({ email: addr })) }];
-
-    const body = {
-      personalizations,
-      from: { email: from },
-      subject,
-      content: [{ type: "text/html", value: html }]
-    };
-
-    if (replyTo) {
-      body.reply_to = { email: replyTo };
-    }
-
-    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+    const response = await fetch("https://api.resend.com/emails", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.SENDGRID_API_KEY}`
+        "Authorization": `Bearer ${process.env.RESEND_API_KEY}`
       },
-      body: JSON.stringify(body)
+      body: JSON.stringify({
+        from,
+        to: Array.isArray(to) ? to : [to],
+        subject,
+        html,
+        reply_to: replyTo || undefined
+      })
     });
 
-    if (response.status === 202) {
-      console.log("Email sent successfully");
-      return { success: true };
+    const data = await response.json();
+
+    if (response.ok) {
+      console.log("Email sent successfully:", data.id);
+      return { success: true, id: data.id };
     } else {
-      const data = await response.json().catch(() => ({}));
       console.error("Email API error:", response.status, JSON.stringify(data));
       return { success: false, error: data };
     }
