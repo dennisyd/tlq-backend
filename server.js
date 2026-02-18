@@ -1,35 +1,60 @@
 const express = require("express");
 const cors = require("cors");
-const nodemailer = require("nodemailer");
 const { subjects, tutors, testimonials } = require("./data");
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-const transporter = nodemailer.createTransport({
-  host: "smtp.gmail.com",
-  port: 587,
-  secure: false,
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS
-  },
-  tls: {
-    rejectUnauthorized: false
-  },
-  connectionTimeout: 15000,
-  greetingTimeout: 15000,
-  socketTimeout: 15000
-});
+async function sendEmail({ from, to, subject, html, replyTo }) {
+  try {
+    const toList = Array.isArray(to) ? to : [to];
+    const personalizations = [{ to: toList.map((addr) => ({ email: addr })) }];
 
-function sendEmailInBackground(mailOptions, label) {
-  transporter.sendMail(mailOptions)
-    .then((info) => {
-      console.log(`${label} email sent successfully:`, info.messageId);
+    const body = {
+      personalizations,
+      from: { email: from },
+      subject,
+      content: [{ type: "text/html", value: html }]
+    };
+
+    if (replyTo) {
+      body.reply_to = { email: replyTo };
+    }
+
+    const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer ${process.env.SENDGRID_API_KEY}`
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (response.status === 202) {
+      console.log("Email sent successfully");
+      return { success: true };
+    } else {
+      const data = await response.json().catch(() => ({}));
+      console.error("Email API error:", response.status, JSON.stringify(data));
+      return { success: false, error: data };
+    }
+  } catch (error) {
+    console.error("Email send error:", error.message);
+    return { success: false, error: error.message };
+  }
+}
+
+function sendEmailInBackground(options, label) {
+  sendEmail(options)
+    .then((result) => {
+      if (result.success) {
+        console.log(`${label} email sent:`, result.id);
+      } else {
+        console.error(`${label} email failed:`, JSON.stringify(result.error));
+      }
     })
-    .catch((error) => {
-      console.error(`${label} email error:`, error.message);
-      console.error(`${label} full error:`, JSON.stringify(error, null, 2));
+    .catch((err) => {
+      console.error(`${label} email unexpected error:`, err.message);
     });
 }
 
@@ -69,9 +94,12 @@ app.post("/api/consultations", (req, res) => {
     });
   }
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: process.env.NOTIFICATION_EMAIL || process.env.EMAIL_USER,
+  const fromAddress = process.env.FROM_EMAIL || "onboarding@resend.dev";
+  const notifyAddress = process.env.NOTIFICATION_EMAIL || "dennisyd@gmail.com";
+
+  sendEmailInBackground({
+    from: fromAddress,
+    to: notifyAddress,
     subject: `New Consultation Request - ${subject}`,
     html: `
       <h2>New Consultation Request</h2>
@@ -86,9 +114,7 @@ app.post("/api/consultations", (req, res) => {
       <p><em>Submitted on ${new Date().toLocaleString()}</em></p>
     `,
     replyTo: email
-  };
-
-  sendEmailInBackground(mailOptions, "Consultation");
+  }, "Consultation (Admin)");
 
   return res.status(201).json({
     status: "received",
@@ -121,9 +147,12 @@ app.post("/api/sat-registration", (req, res) => {
     });
   }
 
-  const mailOptions = {
-    from: process.env.EMAIL_USER,
-    to: process.env.NOTIFICATION_EMAIL || process.env.EMAIL_USER,
+  const fromAddress = process.env.FROM_EMAIL || "onboarding@resend.dev";
+  const notifyAddress = process.env.NOTIFICATION_EMAIL || "dennisyd@gmail.com";
+
+  sendEmailInBackground({
+    from: fromAddress,
+    to: notifyAddress,
     subject: `SAT Crash Course Registration - ${studentName}`,
     html: `
       <h2>New SAT Crash Course Registration</h2>
@@ -146,12 +175,10 @@ app.post("/api/sat-registration", (req, res) => {
       <p><em>Submitted on ${new Date().toLocaleString()}</em></p>
     `,
     replyTo: email
-  };
+  }, "SAT Registration (Admin)");
 
-  sendEmailInBackground(mailOptions, "SAT Registration (Admin)");
-
-  const confirmationEmail = {
-    from: process.env.EMAIL_USER,
+  sendEmailInBackground({
+    from: fromAddress,
     to: email,
     subject: "SAT Crash Course Registration Confirmation - The Learning Quarters",
     html: `
@@ -193,10 +220,8 @@ app.post("/api/sat-registration", (req, res) => {
         </div>
       </div>
     `,
-    replyTo: process.env.NOTIFICATION_EMAIL || process.env.EMAIL_USER
-  };
-
-  sendEmailInBackground(confirmationEmail, "SAT Registration (Confirmation)");
+    replyTo: notifyAddress
+  }, "SAT Registration (Confirmation)");
 
   return res.status(201).json({
     status: "received",
