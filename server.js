@@ -8,15 +8,18 @@ const PORT = process.env.PORT || 4000;
 
 const transporter = nodemailer.createTransport({
   host: "smtp.gmail.com",
-  port: 465,
-  secure: true,
+  port: 587,
+  secure: false,
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  connectionTimeout: 10000,
-  greetingTimeout: 10000,
-  socketTimeout: 10000
+  tls: {
+    rejectUnauthorized: false
+  },
+  connectionTimeout: 15000,
+  greetingTimeout: 15000,
+  socketTimeout: 15000
 });
 
 function sendEmailInBackground(mailOptions, label) {
@@ -145,7 +148,55 @@ app.post("/api/sat-registration", (req, res) => {
     replyTo: email
   };
 
-  sendEmailInBackground(mailOptions, "SAT Registration");
+  sendEmailInBackground(mailOptions, "SAT Registration (Admin)");
+
+  const confirmationEmail = {
+    from: process.env.EMAIL_USER,
+    to: email,
+    subject: "SAT Crash Course Registration Confirmation - The Learning Quarters",
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: linear-gradient(135deg, #1a2a5e, #2d4a9a); padding: 30px; text-align: center; border-radius: 10px 10px 0 0;">
+          <h1 style="color: #ffffff; margin: 0;">The Learning Quarters</h1>
+          <p style="color: #f4d03f; margin: 10px 0 0; font-size: 1.1rem;">SAT Crash Course Registration Confirmed</p>
+        </div>
+        <div style="padding: 30px; background: #ffffff; border: 1px solid #e0e0e0;">
+          <p>Dear ${parentName},</p>
+          <p>Thank you for registering <strong>${studentName}</strong> for our SAT Math Crash Course! We're excited to help your student boost their SAT score.</p>
+          
+          <div style="background: #f7f9fc; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h3 style="color: #1a2a5e; margin-top: 0;">Event Details</h3>
+            <p><strong>Date:</strong> Saturday, February 28, 2026</p>
+            <p><strong>Time:</strong> 9:00 AM - 12:30 PM</p>
+            <p><strong>Duration:</strong> 3.5 Hours</p>
+            <p><strong>Location:</strong> Meeting Room B @ Owings Mills Library</p>
+            <p><strong>Instructors:</strong> Martine & Dr. Dennis</p>
+          </div>
+
+          <div style="background: #e8f5e9; padding: 20px; border-radius: 8px; margin: 20px 0; border-left: 4px solid #1a7a4f;">
+            <h3 style="color: #1a7a4f; margin-top: 0;">Payment Information - $79</h3>
+            <p>Please complete payment using one of the following methods:</p>
+            <ul style="list-style: none; padding: 0;">
+              <li style="padding: 5px 0;"><strong>Zelle:</strong> dennisyd@gmail.com</li>
+              <li style="padding: 5px 0;"><strong>CashApp:</strong> $dennisyd</li>
+              <li style="padding: 5px 0;"><strong>PayPal:</strong> dennisyd@alum.mit.edu</li>
+            </ul>
+          </div>
+
+          <p>If you have any questions, feel free to reply to this email or call us at <strong>(443) 420-7198</strong>.</p>
+          <p>We look forward to seeing ${studentName} there!</p>
+          <p>Best regards,<br><strong>The Learning Quarters Team</strong></p>
+        </div>
+        <div style="background: #1a2a5e; padding: 15px; text-align: center; border-radius: 0 0 10px 10px;">
+          <p style="color: #ffffff; margin: 0; font-size: 0.85rem;">&copy; 2026 The Learning Quarters. All rights reserved.</p>
+          <p style="color: #8fb8e0; margin: 5px 0 0; font-size: 0.8rem;">martine@thelearningquarters.com | (443) 420-7198</p>
+        </div>
+      </div>
+    `,
+    replyTo: process.env.NOTIFICATION_EMAIL || process.env.EMAIL_USER
+  };
+
+  sendEmailInBackground(confirmationEmail, "SAT Registration (Confirmation)");
 
   return res.status(201).json({
     status: "received",
