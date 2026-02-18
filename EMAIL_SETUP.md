@@ -1,115 +1,44 @@
-# Email Notification Setup
+# Email Setup Instructions
 
-Your backend is now configured to send email notifications when someone submits a consultation request!
+To enable email notifications for consultation requests and SAT registrations, you need to configure environment variables on Render.
 
-## Environment Variables Needed
+## Required Environment Variables
 
-You need to add these environment variables to your Render backend:
+Go to your Render dashboard > your backend service > Environment tab and add:
 
-### Required Variables:
-
-1. **EMAIL_USER** - Your Gmail email address (e.g., `martine@thelearningquarters.com` or any Gmail account)
+1. **EMAIL_USER** - Your Gmail address (e.g., `martine@thelearningquarters.com` or a Gmail account)
 2. **EMAIL_PASS** - Your Gmail app-specific password (NOT your regular password)
-3. **NOTIFICATION_EMAIL** (Optional) - Where to receive notifications (defaults to EMAIL_USER if not set)
+3. **NOTIFICATION_EMAIL** - Email address where you want to receive notifications (e.g., `martine@thelearningquarters.com`)
 
----
+## How to Get a Gmail App-Specific Password
 
-## Step-by-Step Setup
+If using Gmail:
 
-### 1. Get a Gmail App Password
+1. Go to your Google Account settings
+2. Enable 2-Factor Authentication (if not already enabled)
+3. Go to Security > 2-Step Verification > App passwords
+4. Generate a new app password for "Mail"
+5. Copy the 16-character password (no spaces)
+6. Use this as your `EMAIL_PASS` value in Render
 
-If using Gmail, you need an "App Password" (more secure than using your regular password):
+## Alternative: Using a Different Email Service
 
-1. Go to your Google Account: https://myaccount.google.com/
-2. Click on **Security** in the left sidebar
-3. Enable **2-Step Verification** (if not already enabled)
-4. After enabling 2FA, go back to Security
-5. Under "Signing in to Google", click **App passwords**
-6. Select **Mail** and **Other (Custom name)**, name it "TLQ Backend"
-7. Click **Generate**
-8. Copy the 16-character password (e.g., `abcd efgh ijkl mnop`)
+If you want to use a different email service, edit `backend/server.js` line 11:
 
-### 2. Add Environment Variables to Render
-
-1. Go to your Render dashboard: https://dashboard.render.com/
-2. Click on your `tlq-backend` service
-3. Click on **Environment** in the left sidebar
-4. Click **Add Environment Variable**
-5. Add each variable:
-
-   ```
-   EMAIL_USER = your-email@gmail.com
-   EMAIL_PASS = your-16-char-app-password
-   NOTIFICATION_EMAIL = martine@thelearningquarters.com
-   ```
-
-6. Click **Save Changes**
-7. Render will automatically redeploy your backend
-
----
-
-## Alternative Email Services
-
-If you don't want to use Gmail, you can use other services:
-
-### Outlook/Hotmail
-```javascript
-service: 'outlook'
-```
-
-### Yahoo
-```javascript
-service: 'yahoo'
-```
-
-### Custom SMTP
-If you have a custom email server:
-
-```javascript
-host: 'smtp.yourdomain.com',
-port: 587,
-secure: false,
-auth: {
-  user: process.env.EMAIL_USER,
-  pass: process.env.EMAIL_PASS
-}
-```
-
----
-
-## What Happens Now
-
-When someone submits the consultation form:
-
-1. ✅ Form data is validated
-2. ✅ Email notification is sent to your inbox with:
-   - Parent/Guardian Name
-   - Email address (set as reply-to, so you can reply directly)
-   - Phone number
-   - Student Grade
-   - Subject Focus
-   - Optional message
-   - Timestamp
-3. ✅ Form submitter sees success message
-4. ✅ Even if email fails, the form submission succeeds (error is logged but doesn't break the user experience)
-
----
+- For Outlook: `service: 'outlook'`
+- For Yahoo: `service: 'yahoo'`
+- For custom SMTP: Replace the entire transporter config with custom SMTP settings
 
 ## Testing
 
-After adding the environment variables to Render:
+After setting environment variables:
 
-1. Go to your website
-2. Fill out the consultation form
-3. Submit it
-4. Check your email inbox
-5. You should receive a notification email!
+1. Redeploy your backend on Render
+2. Test by submitting a consultation request or SAT registration
+3. Check the Render logs for "Email notification sent successfully" or any errors
+4. Check your NOTIFICATION_EMAIL inbox
 
----
+## Current Email Features
 
-## Troubleshooting
-
-- **Not receiving emails?** Check your spam/junk folder
-- **Authentication error?** Make sure you're using an App Password, not your regular password
-- **Still not working?** Check the Render logs for error messages
-
+- **Consultation Requests** (from homepage) → sends email to NOTIFICATION_EMAIL
+- **SAT Registration** (from /sat-registration page) → sends email to NOTIFICATION_EMAIL with full registration details including location and payment info
