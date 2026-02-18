@@ -6,14 +6,29 @@ const { subjects, tutors, testimonials } = require("./data");
 const app = express();
 const PORT = process.env.PORT || 4000;
 
-// Email transporter configuration
 const transporter = nodemailer.createTransport({
-  service: 'gmail', // You can change this to other services like 'outlook', 'yahoo', etc.
+  host: "smtp.gmail.com",
+  port: 465,
+  secure: true,
   auth: {
-    user: process.env.EMAIL_USER, // Your email address
-    pass: process.env.EMAIL_PASS  // Your email password or app-specific password
-  }
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  },
+  connectionTimeout: 10000,
+  greetingTimeout: 10000,
+  socketTimeout: 10000
 });
+
+function sendEmailInBackground(mailOptions, label) {
+  transporter.sendMail(mailOptions)
+    .then((info) => {
+      console.log(`${label} email sent successfully:`, info.messageId);
+    })
+    .catch((error) => {
+      console.error(`${label} email error:`, error.message);
+      console.error(`${label} full error:`, JSON.stringify(error, null, 2));
+    });
+}
 
 app.use(cors());
 app.use(express.json());
@@ -34,7 +49,7 @@ app.get("/api/testimonials", (req, res) => {
   res.json({ testimonials });
 });
 
-app.post("/api/consultations", async (req, res) => {
+app.post("/api/consultations", (req, res) => {
   const { name, email, phone, studentGrade, subject, message } = req.body || {};
   const missing = [];
 
@@ -51,33 +66,26 @@ app.post("/api/consultations", async (req, res) => {
     });
   }
 
-  // Send email notification
-  try {
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: process.env.NOTIFICATION_EMAIL || process.env.EMAIL_USER, // Where to receive notifications
-      subject: `New Consultation Request - ${subject}`,
-      html: `
-        <h2>New Consultation Request</h2>
-        <p><strong>Parent/Guardian Name:</strong> ${name}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Student Grade:</strong> ${studentGrade}</p>
-        <p><strong>Subject Focus:</strong> ${subject}</p>
-        <p><strong>Message:</strong></p>
-        <p>${message || "No additional message provided."}</p>
-        <hr>
-        <p><em>Submitted on ${new Date().toLocaleString()}</em></p>
-      `,
-      replyTo: email // Allows you to reply directly to the parent/guardian
-    };
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: process.env.NOTIFICATION_EMAIL || process.env.EMAIL_USER,
+    subject: `New Consultation Request - ${subject}`,
+    html: `
+      <h2>New Consultation Request</h2>
+      <p><strong>Parent/Guardian Name:</strong> ${name}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Phone:</strong> ${phone}</p>
+      <p><strong>Student Grade:</strong> ${studentGrade}</p>
+      <p><strong>Subject Focus:</strong> ${subject}</p>
+      <p><strong>Message:</strong></p>
+      <p>${message || "No additional message provided."}</p>
+      <hr>
+      <p><em>Submitted on ${new Date().toLocaleString()}</em></p>
+    `,
+    replyTo: email
+  };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log("Email notification sent successfully:", info.messageId);
-  } catch (error) {
-    console.error("Error sending email:", error.message);
-    console.error("Full error:", JSON.stringify(error, null, 2));
-  }
+  sendEmailInBackground(mailOptions, "Consultation");
 
   return res.status(201).json({
     status: "received",
@@ -92,7 +100,7 @@ app.post("/api/consultations", async (req, res) => {
   });
 });
 
-app.post("/api/sat-registration", async (req, res) => {
+app.post("/api/sat-registration", (req, res) => {
   const { studentName, parentName, email, phone, grade, currentScore, targetScore, testDate, message } = req.body || {};
   const missing = [];
 
@@ -110,41 +118,34 @@ app.post("/api/sat-registration", async (req, res) => {
     });
   }
 
-  // Send email notification
-  try {
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: process.env.NOTIFICATION_EMAIL || process.env.EMAIL_USER,
-      subject: `SAT Crash Course Registration - ${studentName}`,
-      html: `
-        <h2>New SAT Crash Course Registration</h2>
-        <p><strong>Student Name:</strong> ${studentName}</p>
-        <p><strong>Parent/Guardian Name:</strong> ${parentName}</p>
-        <p><strong>Email:</strong> ${email}</p>
-        <p><strong>Phone:</strong> ${phone}</p>
-        <p><strong>Grade:</strong> ${grade}</p>
-        <p><strong>Current SAT Score:</strong> ${currentScore || "Not taken yet"}</p>
-        <p><strong>Target SAT Score:</strong> ${targetScore}</p>
-        <p><strong>Test Date:</strong> ${testDate || "Not specified"}</p>
-        <p><strong>Questions/Comments:</strong></p>
-        <p>${message || "No additional comments."}</p>
-        <hr>
-        <p><strong>Event:</strong> SAT Crash Course - February 28, 2026</p>
-        <p><strong>Location:</strong> Meeting Room B @ Owings Mills Library</p>
-        <p><strong>Cost:</strong> $79</p>
-        <p><strong>Payment Options:</strong> Zelle (dennisyd@gmail.com), CashApp ($dennisyd), PayPal (dennisyd@alum.mit.edu)</p>
-        <hr>
-        <p><em>Submitted on ${new Date().toLocaleString()}</em></p>
-      `,
-      replyTo: email
-    };
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: process.env.NOTIFICATION_EMAIL || process.env.EMAIL_USER,
+    subject: `SAT Crash Course Registration - ${studentName}`,
+    html: `
+      <h2>New SAT Crash Course Registration</h2>
+      <p><strong>Student Name:</strong> ${studentName}</p>
+      <p><strong>Parent/Guardian Name:</strong> ${parentName}</p>
+      <p><strong>Email:</strong> ${email}</p>
+      <p><strong>Phone:</strong> ${phone}</p>
+      <p><strong>Grade:</strong> ${grade}</p>
+      <p><strong>Current SAT Score:</strong> ${currentScore || "Not taken yet"}</p>
+      <p><strong>Target SAT Score:</strong> ${targetScore}</p>
+      <p><strong>Test Date:</strong> ${testDate || "Not specified"}</p>
+      <p><strong>Questions/Comments:</strong></p>
+      <p>${message || "No additional comments."}</p>
+      <hr>
+      <p><strong>Event:</strong> SAT Crash Course - February 28, 2026</p>
+      <p><strong>Location:</strong> Meeting Room B @ Owings Mills Library</p>
+      <p><strong>Cost:</strong> $79</p>
+      <p><strong>Payment Options:</strong> Zelle (dennisyd@gmail.com), CashApp ($dennisyd), PayPal (dennisyd@alum.mit.edu)</p>
+      <hr>
+      <p><em>Submitted on ${new Date().toLocaleString()}</em></p>
+    `,
+    replyTo: email
+  };
 
-    const info = await transporter.sendMail(mailOptions);
-    console.log("SAT registration email sent successfully:", info.messageId);
-  } catch (error) {
-    console.error("Error sending SAT registration email:", error.message);
-    console.error("Full error:", JSON.stringify(error, null, 2));
-  }
+  sendEmailInBackground(mailOptions, "SAT Registration");
 
   return res.status(201).json({
     status: "received",
@@ -165,4 +166,3 @@ app.post("/api/sat-registration", async (req, res) => {
 app.listen(PORT, () => {
   console.log(`TLQ API listening on http://localhost:${PORT}`);
 });
-
