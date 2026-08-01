@@ -27,20 +27,20 @@ const subjects = [
 
 const tutors = [
   {
-    id: "maria-holt",
-    name: "Maria Holt",
+    id: "martine-dennis",
+    name: "Martine Dennis",
     specialty: "Mathematics",
-    credentials: "M.S. Applied Mathematics, 8 years experience",
+    credentials: "M.S. Applied Mathematics, 25+ years experience",
     rating: 4.9,
     bio: "Data-driven lessons that build confidence and mastery."
   },
   {
-    id: "david-park",
-    name: "David Park",
-    specialty: "Reading & Writing",
-    credentials: "M.Ed. Literacy, former curriculum specialist",
+    id: "yancy-dennis",
+    name: "Yancy Dennis",
+    specialty: "Math, Programming and Chemistry",
+    credentials: "PhD Chemical Engineering, 30+ years experience",
     rating: 4.8,
-    bio: "Strategic reading and writing support for every learner."
+    bio: "Advanced STEM support across math, programming, chemistry, and engineering."
   },
   {
     id: "alina-singh",

@@ -62,10 +62,10 @@ Returns a list of available tutors.
 {
   "tutors": [
     {
-      "id": "maria-holt",
-      "name": "Maria Holt",
+      "id": "martine-dennis",
+      "name": "Martine Dennis",
       "specialty": "Mathematics",
-      "credentials": "M.S. Applied Mathematics, 8 years experience",
+      "credentials": "M.S. Applied Mathematics, 25+ years experience",
       "rating": 4.9,
       "avatar": "https://..."
     }
